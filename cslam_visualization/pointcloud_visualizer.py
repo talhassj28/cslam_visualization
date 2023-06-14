@@ -1,10 +1,11 @@
 import rclpy
-from rclpy.node import Node
+from rclpy.node import Node 
 import numpy as np
 
 from cslam_common_interfaces.msg import VizPointCloud
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
+from geometry_msgs.msg import Pose # TODO: remove this
 from std_msgs.msg import ColorRGBA
 import math
 from cslam_visualization.utils.transform import Transform
@@ -13,6 +14,7 @@ from sensor_msgs.msg import PointCloud2
 from distinctipy import distinctipy
 import copy
 from tf2_ros import TransformBroadcaster
+import cslam.lidar_pr.icp_utils as icp_utils
 from cslam.utils.point_cloud2 import read_points, read_points_numpy_filtered
 from struct import pack, unpack
 import open3d
@@ -43,12 +45,17 @@ class PointCloudVisualizer():
         if self.params["rotation_to_sensor_frame"] is not None:
             self.rotation_to_sensor_frame = Transform(quat=self.params["rotation_to_sensor_frame"], pos=self.rotation_to_sensor_frame.position())
             self.node.get_logger().info("rotation_to_sensor_frame: {} ".format(self.params["rotation_to_sensor_frame"]))
-
+        
+        timer = threading.Timer(5.0, self.retrieve_map)
+        timer.start()
 
     def pointclouds_callback(self, msg):
         if msg.robot_id not in self.pointclouds:
             self.pointclouds[msg.robot_id] = []
         self.pointclouds[msg.robot_id].append(msg)
+
+        # TODO: store data if necessary
+        self.store_point_cloud(msg.pointcloud); 
 
     def pose_to_transform(self, pose):
         quat = [pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z]
@@ -197,19 +204,117 @@ class PointCloudVisualizer():
                                 marker = self.pointcloud_to_mesh_marker(robot_id, pcl.keyframe_id, pcl.pointcloud)
                             else:
                                 marker = self.pointcloud_to_marker(robot_id, pcl.keyframe_id, pcl.pointcloud)
-
                             self.markers_to_publish.append(marker)
                             self.tfs_to_publish.append(tf_to_publish)
                             self.previous_poses = copy.deepcopy(self.pose_graph_viz.robot_pose_graphs)
                             self.pointclouds[robot_id].remove(pcl)
 
+    def store_point_cloud(self, pc_msg):
+        """Store point cloud data into a given .pcd file 
+
+        Args:
+            pc_msg (sensor_msgs/Pointcloud2): point cloud
+        """
+        # TODO: remove next line
+        # pcd_data = open3d.data.PCDPointCloud() 
+        # logger = get_logger('my_node')
+        # logger.info("STORING MAP")
+        point_cloud = icp_utils.ros_to_open3d(pc_msg)
+        # logger.info("STORING MAP - points: " + np.array2string(np.asarray(point_cloud.points)))
+        open3d.io.write_point_cloud("/home/romantwice/data.pcd", point_cloud)
+
+    def retrieve_map(self):
+        pcd = open3d.io.read_point_cloud("/home/romantwice/data.pcd")
+        ros_point_cloud = icp_utils.open3d_to_ros(pcd)
+        # self.node.get_logger().info("POINTS")
+        # self.node.get_logger().info(str(ros_point_cloud))
+
+        marker = self.pointcloud_to_marker(0, 0, ros_point_cloud)
+        marker.header.frame_id = "robot0_keyframe0"
+
+        self.node.get_logger().info("-----------------------------------------------------------------") 
+        self.node.get_logger().info(str(marker.header))
+        self.node.get_logger().info(str(marker.ns))
+        self.node.get_logger().info(str(marker.id))
+        self.node.get_logger().info(str(marker.colors[0]))
+        self.node.get_logger().info(str(marker.points[0]))
+        self.node.get_logger().info("-----------------------------------------------------------------")
+        
+        #  tf_to_publish.header.frame_id = "robot" + str(self.pose_graph_viz.origin_robot_ids[robot_id]) + "_map"
+        #                     tf_to_publish.header.stamp = rclpy.time.Time().to_msg()
+        #                     tf_to_publish.child_frame_id = "robot" + str(robot_id) + "_keyframe" + str(pcl.keyframe_id)
+        marker.header.stamp = rclpy.time.Time().to_msg()
+        self.markers_publisher.publish(marker)
+        tf_to_publish = TransformStamped()
+        tf_to_publish.header.frame_id = "robot0_map"
+        tf_to_publish.header.stamp = rclpy.time.Time().to_msg()
+        tf_to_publish.child_frame_id = "robot0_keyframe0"
+        pose = Pose()
+        pose.position.x = 1.0
+        pose.position.y = 2.0
+        pose.position.z = 3.0
+        pose.orientation.x = 0.0
+        pose.orientation.y = 0.0
+        pose.orientation.z = 0.0
+        pose.orientation.w = 1.0
+
+        t = self.pose_to_transform(pose)
+        t = t * self.rotation_to_sensor_frame
+        tf_to_publish.transform = t.to_msg()
+        # self.tfs_to_publish.append(tf_to_publish)
+        self.tf_broadcaster.sendTransform(tf_to_publish)
+
+        # self.node.get_logger().info(np.array2string(np.asarray(pcd.points)))
+        # pcd_data = open3d.data.PCDPointCloud("/home/romantwice")
+        # self.node.get_logger().info("PATH")
+        # self.node.get_logger().info(pcd_data.path)
+        # marker = Marker()
+        # marker.type = Marker.MESH_RESOURCE
+        # marker.action = Marker.ADD
+        # marker.scale.x = 1.0
+        # marker.scale.y = 1.0
+        # marker.scale.z = 1.0
+        # marker.frame_locked = True
+        # marker.mesh_resource = "package://data.stl"
+        # marker.ns = "keypoints_robot0"
+        # marker.id = 0
+        # green = ColorRGBA()
+        # green.r = 0.0    # Red component
+        # green.g = 1.0    # Green component
+        # green.b = 0.0    # Blue component
+        # green.a = 1.0
+        # marker.color = green
+        # marker.header.frame_id = "robot0_keyframe0" #pointcloud.header.frame_id
+        # marker.header.stamp = self.node.get_clock().now().to_msg() # pointcloud.header.stamp
+        # self.node.get_logger().info("Publishing MARKER" + str(marker))
+        # self.markers_publisher.publish(marker)
+
+
     def visualization_callback(self):
         self.keyframe_pointcloud_to_pose_pointcloud()
         self.node.get_logger().info("Publishing " + str(len(self.markers_to_publish)) + " pointclouds.")
-        for pc in self.markers_to_publish:
-            self.pointclouds_keys_published.add((pc.ns, pc.id))
-            self.markers_publisher.publish(pc)
-        for tf in self.tfs_to_publish:
-            self.tf_broadcaster.sendTransform(tf)
+        
+        if (len(self.markers_to_publish) != 0):
+            self.node.get_logger().info("-----------------------------------------------------------------") 
+            self.node.get_logger().info(str(self.markers_to_publish[0].header))
+            self.node.get_logger().info(str(self.markers_to_publish[0].ns))
+            self.node.get_logger().info(str(self.markers_to_publish[0].id))
+            self.node.get_logger().info(str(self.markers_to_publish[0].colors[0]))
+            self.node.get_logger().info(str(self.markers_to_publish[0].points[0]))
+            self.node.get_logger().info("-----------------------------------------------------------------")
+            # count = 0
+            for pc in self.markers_to_publish:
+                # if count == 0: 
+                self.markers_publisher.publish(pc)
+            for tf in self.tfs_to_publish:
+                self.node.get_logger().info("PUBLISHING")
+                self.tf_broadcaster.sendTransform(tf)
+                    # count = 1
+        #     self.pointclouds_keys_published.add((pc.ns, pc.id))
+        # for pc in self.markers_to_publish:
+        #     self.pointclouds_keys_published.add((pc.ns, pc.id))
+        #     self.markers_publisher.publish(pc)
+        # for tf in self.tfs_to_publish:
+        #     self.tf_broadcaster.sendTransform(tf)
         self.markers_to_publish = []
         
