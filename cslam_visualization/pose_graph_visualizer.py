@@ -1,4 +1,6 @@
 import rclpy
+import json
+import os.path
 from rclpy.node import Node
 
 from cslam_common_interfaces.msg import PoseGraph
@@ -23,6 +25,51 @@ class PoseGraphVisualizer():
         self.timer = self.node.create_timer(
             self.visualizer_update_period_ms_ / 1000.0,
             self.visualization_callback)
+        
+    def store_pose_graph(self, msg):
+        file_path = "/home/polyorbite/Projects/MISTLab/Swarm-SLAM/src/cslam_visualization/pose_graph.json"
+        
+        # TODO: change this implementation method, w rewrites the file everytime
+        with open(file_path, "w+") as json_file:
+            pose_graph_to_store = {}
+            try:
+                pose_graph_to_store = json.load(json_file)
+            except:
+                self.node.get_logger().info(f"Error: File '{file_path}' not found.")
+
+            if msg.robot_id not in pose_graph_to_store:
+                pose_graph_to_store[msg.robot_id] = {
+                    "edges": {},
+                    "values": {}
+                }
+
+            for pose_graph_value in msg.values:
+                pose_graph_to_store["values"][msg.robot_id][pose_graph_value.key.keyframe_id] = {
+                    "position": {
+                        "x": pose_graph_value.pose.position.x,
+                        "y": pose_graph_value.pose.position.y,
+                        "z": pose_graph_value.pose.position.z
+                    },
+                    "orientation": {
+                        "x": pose_graph_value.pose.orientation.x,
+                        "y": pose_graph_value.pose.orientation.y,
+                        "z": pose_graph_value.pose.orientation.z,
+                        "w": pose_graph_value.pose.orientation.w
+                    },
+                }
+            
+            for pose_graph_edge in msg.edges:
+                pose_graph_to_store["edges"][msg.robot_id][pose_graph_value.key.keyframe_id] = {
+                    "measurement": {
+                        "x": pose_graph_edgemeasurement.position.x,
+                        "y": pose_graph_edgemeasurement.position.y,
+                        "z": pose_graph_edgemeasurement.position.z
+                    },
+                    "noise_std": []
+                }
+                
+            # Write the data to the JSON file
+            json.dump(pose_graph_to_store, json_file)
 
     def pose_graph_callback(self, msg):
         self.origin_robot_ids[msg.robot_id] = msg.origin_robot_id
@@ -31,7 +78,9 @@ class PoseGraphVisualizer():
 
         for pose in msg.values:
             self.robot_pose_graphs[msg.robot_id][pose.key.keyframe_id] = pose
+            
         self.robot_pose_graphs_edges[msg.robot_id] = msg.edges
+        self.store_pose_graph(msg)
 
     def robot_pose_graphs_to_marker_array(self):
         """Converts a PoseGraph messages to a MarkerArray message"""
@@ -85,7 +134,7 @@ class PoseGraphVisualizer():
             marker_array.markers.append(marker)
 
         return marker_array
-
+ 
     def visualization_callback(self):
         marker_array = self.robot_pose_graphs_to_marker_array()
         self.pose_graph_markers_publisher.publish(marker_array)
