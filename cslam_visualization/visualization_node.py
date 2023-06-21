@@ -40,6 +40,9 @@ if __name__ == '__main__':
         'pose_graph_markers_size').value
     params['produce_mesh'] = node.get_parameter(
         'produce_mesh').value
+    params['map_path'] = node.get_parameter(
+        'map_path').value
+    
     pose_graph_viz = PoseGraphVisualizer(node, params)
     keypoints_viz = []
     if params['enable_keypoints_visualization']:

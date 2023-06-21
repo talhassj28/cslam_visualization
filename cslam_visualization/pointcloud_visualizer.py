@@ -50,8 +50,9 @@ class PointCloudVisualizer():
             self.node.get_logger().info("rotation_to_sensor_frame: {} ".format(self.params["rotation_to_sensor_frame"]))
         
         # UNCOMMENT TO RETRIEVE MAP
-        # timer = threading.Timer(5.0, self.retrieve_map)
-        # timer.start()
+        if self.params['map_path'] != '':
+            timer = threading.Timer(5.0, self.retrieve_map)
+            timer.start()
 
     def pointclouds_callback(self, msg):
         if msg.robot_id not in self.pointclouds:
@@ -223,6 +224,7 @@ class PointCloudVisualizer():
         open3d.io.write_point_cloud("/home/romantwice/data.pcd", point_cloud)
 
     def retrieve_map(self):
+        # TODO: make able to use relative and absolute path
         # TODO: use file name as param
         pose_graph_path = self.params['map_path'] + '/pose_graph.json'
 
@@ -232,10 +234,11 @@ class PointCloudVisualizer():
             for robot_id, robot_pose_graph in global_pose_graph.items():
                 point_cloud_keyframes_folder = self.params['map_path'] + '/robot' + str(robot_id) 
                 for keyframe_id, pose_graph_keyframe in robot_pose_graph['values'].items():
+                    point_cloud_keyframe_path = point_cloud_keyframes_folder + '/keyframe_' + str(keyframe_id) + '.pcd'
                     if (os.path.exists(point_cloud_keyframes_folder + '/keyframe_' + str(keyframe_id) + '.pcd')):
-                        # pcd = open3d.io.read_point_cloud("/home/romantwice/data.pcd")
-                        # ros_point_cloud = icp_utils.open3d_to_ros(pcd)
-           
+                        pcd = open3d.io.read_point_cloud(point_cloud_keyframe_path)
+                        ros_point_cloud = icp_utils.open3d_to_ros(pcd)
+                 
         # pcd = open3d.io.read_point_cloud("/home/romantwice/data.pcd")
         # ros_point_cloud = icp_utils.open3d_to_ros(pcd)
 
