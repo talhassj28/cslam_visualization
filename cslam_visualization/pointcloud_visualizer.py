@@ -225,16 +225,7 @@ class PointCloudVisualizer():
         ros_point_cloud = icp_utils.open3d_to_ros(pcd)
 
         marker = self.pointcloud_to_marker(0, 0, ros_point_cloud)
-        marker.header.frame_id = "robot0_keyframe0"
-
-        self.node.get_logger().info("-----------------------------------------------------------------") 
-        self.node.get_logger().info(str(marker.header))
-        self.node.get_logger().info(str(marker.ns))
-        self.node.get_logger().info(str(marker.id))
-        self.node.get_logger().info(str(marker.colors[0]))
-        self.node.get_logger().info(str(marker.points[0]))
-        self.node.get_logger().info("-----------------------------------------------------------------")
-        
+        marker.header.frame_id = "robot0_keyframe0"        
         marker.header.stamp = rclpy.time.Time().to_msg()
         self.markers_publisher.publish(marker)
         tf_to_publish = TransformStamped()
@@ -272,7 +263,6 @@ class PointCloudVisualizer():
                 # if count == 0: 
                 self.markers_publisher.publish(pc)
             for tf in self.tfs_to_publish:
-                self.node.get_logger().info("PUBLISHING")
                 self.tf_broadcaster.sendTransform(tf)
                     # count = 1
         #     self.pointclouds_keys_published.add((pc.ns, pc.id))

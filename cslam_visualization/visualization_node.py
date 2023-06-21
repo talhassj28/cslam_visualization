@@ -6,6 +6,7 @@ from cslam_common_interfaces.msg import PoseGraph
 from cslam_visualization.pose_graph_visualizer import PoseGraphVisualizer
 from cslam_visualization.keypoints3d_visualizer import Keypoints3DVisualizer
 from cslam_visualization.pointcloud_visualizer import PointCloudVisualizer
+from cslam_visualization.map_keeper import MapKeeper
 
 if __name__ == '__main__':
 
@@ -45,6 +46,9 @@ if __name__ == '__main__':
     pointcloud_viz = []
     if params['enable_pointclouds_visualization']:
         pointcloud_viz = PointCloudVisualizer(node, params, pose_graph_viz)
+    
+    map_keeper_node = MapKeeper(node, pose_graph_viz, pointcloud_viz)
+    
     node.get_logger().info('Initialization done.')
     rclpy.spin(node)
     rclpy.shutdown()
