@@ -1,3 +1,5 @@
+import json
+import os
 import rclpy
 from rclpy.node import Node 
 import numpy as np
@@ -221,30 +223,43 @@ class PointCloudVisualizer():
         open3d.io.write_point_cloud("/home/romantwice/data.pcd", point_cloud)
 
     def retrieve_map(self):
-        pcd = open3d.io.read_point_cloud("/home/romantwice/data.pcd")
-        ros_point_cloud = icp_utils.open3d_to_ros(pcd)
+        # TODO: use file name as param
+        pose_graph_path = self.params['map_path'] + '/pose_graph.json'
 
-        marker = self.pointcloud_to_marker(0, 0, ros_point_cloud)
-        marker.header.frame_id = "robot0_keyframe0"        
-        marker.header.stamp = rclpy.time.Time().to_msg()
-        self.markers_publisher.publish(marker)
-        tf_to_publish = TransformStamped()
-        tf_to_publish.header.frame_id = "robot0_map"
-        tf_to_publish.header.stamp = rclpy.time.Time().to_msg()
-        tf_to_publish.child_frame_id = "robot0_keyframe0"
-        pose = Pose()
-        pose.position.x = 1.0
-        pose.position.y = 2.0
-        pose.position.z = 3.0
-        pose.orientation.x = 0.0
-        pose.orientation.y = 0.0
-        pose.orientation.z = 0.0
-        pose.orientation.w = 1.0
+        with open(pose_graph_path, 'r') as file:
+            # Step 3: Load the JSON data into a Python object
+            global_pose_graph = json.load(file)
+            for robot_id, robot_pose_graph in global_pose_graph.items():
+                point_cloud_keyframes_folder = self.params['map_path'] + '/robot' + str(robot_id) 
+                for keyframe_id, pose_graph_keyframe in robot_pose_graph['values'].items():
+                    if (os.path.exists(point_cloud_keyframes_folder + '/keyframe_' + str(keyframe_id) + '.pcd')):
+                        # pcd = open3d.io.read_point_cloud("/home/romantwice/data.pcd")
+                        # ros_point_cloud = icp_utils.open3d_to_ros(pcd)
+           
+        # pcd = open3d.io.read_point_cloud("/home/romantwice/data.pcd")
+        # ros_point_cloud = icp_utils.open3d_to_ros(pcd)
 
-        t = self.pose_to_transform(pose)
-        t = t * self.rotation_to_sensor_frame
-        tf_to_publish.transform = t.to_msg()
-        self.tf_broadcaster.sendTransform(tf_to_publish)
+        # marker = self.pointcloud_to_marker(0, 0, ros_point_cloud)
+        # marker.header.frame_id = "robot0_keyframe0"        
+        # marker.header.stamp = rclpy.time.Time().to_msg()
+        # self.markers_publisher.publish(marker)
+        # tf_to_publish = TransformStamped()
+        # tf_to_publish.header.frame_id = "robot0_map"
+        # tf_to_publish.header.stamp = rclpy.time.Time().to_msg()
+        # tf_to_publish.child_frame_id = "robot0_keyframe0"
+        # pose = Pose()
+        # pose.position.x = 1.0
+        # pose.position.y = 2.0
+        # pose.position.z = 3.0
+        # pose.orientation.x = 0.0
+        # pose.orientation.y = 0.0
+        # pose.orientation.z = 0.0
+        # pose.orientation.w = 1.0
+
+        # t = self.pose_to_transform(pose)
+        # t = t * self.rotation_to_sensor_frame
+        # tf_to_publish.transform = t.to_msg()
+        # self.tf_broadcaster.sendTransform(tf_to_publish)
 
     def visualization_callback(self):
         self.keyframe_pointcloud_to_pose_pointcloud()
