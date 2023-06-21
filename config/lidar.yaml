@@ -7,3 +7,4 @@
     voxel_size: 0.1
     pose_graph_markers_size: 1.0
     produce_mesh: false
+    map_path: map

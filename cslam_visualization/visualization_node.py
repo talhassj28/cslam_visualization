@@ -21,7 +21,8 @@ if __name__ == '__main__':
                         ('produce_mesh', False),
                         ('voxel_size', 0.5),
                         ('rotation_to_sensor_frame', None),
-                        ('pose_graph_markers_size', 0.1)])
+                        ('pose_graph_markers_size', 0.1),
+                        ('map_path', ''),]) # TODO: test if this default value works
     params = {}
     params['nb_colors'] = node.get_parameter(
         'nb_colors').value
@@ -46,9 +47,9 @@ if __name__ == '__main__':
     pointcloud_viz = []
     if params['enable_pointclouds_visualization']:
         pointcloud_viz = PointCloudVisualizer(node, params, pose_graph_viz)
-    
+
     map_keeper_node = MapKeeper(node, pose_graph_viz, pointcloud_viz)
-    
+        
     node.get_logger().info('Initialization done.')
     rclpy.spin(node)
     rclpy.shutdown()
