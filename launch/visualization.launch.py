@@ -38,10 +38,10 @@ def generate_launch_description():
                                   'config/'),
                               description=''),
         DeclareLaunchArgument('config_file',
-                              default_value='default.yaml',
+                              default_value='lidar.yaml',
                               description=''),
         DeclareLaunchArgument('rviz_config_file',
-                              default_value='stereo.rviz',
+                              default_value='lidar.rviz',
                               description=''),
         DeclareLaunchArgument('config',
                               default_value=[
