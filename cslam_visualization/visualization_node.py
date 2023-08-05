@@ -15,11 +15,11 @@ if __name__ == '__main__':
             namespace='',
             parameters=[('nb_colors', 10),
                         ('visualization_update_period_ms', 100),
-                        ('enable_keypoints_visualization', False),
-                        ('enable_pointclouds_visualization', False),
+                        ('enable_keypoints_visualization', True),
+                        ('enable_pointclouds_visualization', True),
                         ('produce_mesh', False),
                         ('voxel_size', 0.5),
-                        ('rotation_to_sensor_frame', None),
+                        ('rotation_to_sensor_frame', [0.5, -0.5, 0.5, -0.5]),
                         ('pose_graph_markers_size', 0.1)])
     params = {}
     params['nb_colors'] = node.get_parameter(
