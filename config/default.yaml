@@ -3,6 +3,6 @@
     nb_colors: 10
     visualization_update_period_ms: 5000
     enable_keypoints_visualization: true
-    enable_pointclouds_visualization: false
+    enable_pointclouds_visualization: true
     voxel_size: 0.1
     pose_graph_markers_size: 0.1
