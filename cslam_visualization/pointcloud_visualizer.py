@@ -50,9 +50,9 @@ class PointCloudVisualizer():
             self.node.get_logger().info("rotation_to_sensor_frame: {} ".format(self.params["rotation_to_sensor_frame"]))
         
         # UNCOMMENT TO RETRIEVE MAP
-        if self.params['map_path'] != '':
-            timer = threading.Timer(5.0, self.retrieve_map)
-            timer.start()
+        # if self.params['map_path'] != '':
+        #     timer = threading.Timer(5.0, self.retrieve_map)
+        #     timer.start()
 
     def pointclouds_callback(self, msg):
         if msg.robot_id not in self.pointclouds:
@@ -227,7 +227,7 @@ class PointCloudVisualizer():
         # TODO: make able to use relative and absolute path
         # TODO: use file name as param
         pose_graph_path = self.params['map_path'] + '/pose_graph.json'
-
+        # TODO: fix bug when path doesnt exist (add try catch)
         with open(pose_graph_path, 'r') as file:
             global_pose_graph = json.load(file)
             for robot_id, robot_pose_graph in global_pose_graph.items():
