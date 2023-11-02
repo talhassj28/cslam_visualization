@@ -23,9 +23,18 @@ def launch_setup(context, *args, **kwargs):
             arguments=['-d', LaunchConfiguration('rviz_config').perform(context)],
         )
     
+    # Map storage node
+    storage_node = Node(
+        package='cslam_storage',
+        executable='cslam_storage.py',
+        name='cslam_storage',
+        parameters=[LaunchConfiguration('storage_config')]
+    )
+    
     return [
         visualization_node,
         rviz_node,
+        storage_node
     ]
 
 
@@ -54,6 +63,11 @@ def generate_launch_description():
                                   LaunchConfiguration('config_path'),
                                   LaunchConfiguration('rviz_config_file')
                               ],
+                              description=''),
+        DeclareLaunchArgument('storage_config',
+                              default_value=os.path.join(
+                                  get_package_share_directory('cslam_storage'),
+                                  'config', 'visualization_storage.yaml'),
                               description=''),
         OpaqueFunction(function=launch_setup)
     ])

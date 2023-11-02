@@ -68,6 +68,12 @@ find_package(PCL 1.7
             segmentation
             ) #This crashes idl generation if all components are found?! see https://github.com/ros2/rosidl/issues/402#issuecomment-565586908
 
+# Generate service interfaces
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/MapPath.srv"
+)
+
 ###########
 ## Build ##
 ###########

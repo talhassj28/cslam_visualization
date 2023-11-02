@@ -6,6 +6,7 @@ from cslam_common_interfaces.msg import PoseGraph
 from cslam_visualization.pose_graph_visualizer import PoseGraphVisualizer
 from cslam_visualization.keypoints3d_visualizer import Keypoints3DVisualizer
 from cslam_visualization.pointcloud_visualizer import PointCloudVisualizer
+from cslam_visualization.map_keeper import MapKeeper
 
 if __name__ == '__main__':
 
@@ -20,7 +21,8 @@ if __name__ == '__main__':
                         ('produce_mesh', False),
                         ('voxel_size', 0.5),
                         ('rotation_to_sensor_frame', [0.5, -0.5, 0.5, -0.5]),
-                        ('pose_graph_markers_size', 0.1)])
+                        ('pose_graph_markers_size', 0.1),
+                        ('map_path', ''),]) # TODO: test if this default value works
     params = {}
     params['nb_colors'] = node.get_parameter(
         'nb_colors').value
@@ -38,6 +40,9 @@ if __name__ == '__main__':
         'pose_graph_markers_size').value
     params['produce_mesh'] = node.get_parameter(
         'produce_mesh').value
+    params['map_path'] = node.get_parameter(
+        'map_path').value
+    
     pose_graph_viz = PoseGraphVisualizer(node, params)
     keypoints_viz = []
     if params['enable_keypoints_visualization']:
@@ -45,6 +50,9 @@ if __name__ == '__main__':
     pointcloud_viz = []
     if params['enable_pointclouds_visualization']:
         pointcloud_viz = PointCloudVisualizer(node, params, pose_graph_viz)
+
+    map_keeper_node = MapKeeper(node, pose_graph_viz, pointcloud_viz)
+        
     node.get_logger().info('Initialization done.')
     rclpy.spin(node)
     rclpy.shutdown()
