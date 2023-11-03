@@ -69,10 +69,14 @@ find_package(PCL 1.7
             ) #This crashes idl generation if all components are found?! see https://github.com/ros2/rosidl/issues/402#issuecomment-565586908
 
 # Generate service interfaces
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/MapPath.srv"
-)
+# talhassj28:
+# Not using rosidl in the same package as ament_python_install_package()
+# Caused error: add_custom_target cannot create target "ament_cmake_python_copy_cslam_visualization" because another target with the same name already exists.
+# GitHub-Issue: https://github.com/ros2/rosidl_python/issues/141
+# Instead building service inside of cslam_common_interfaces
+#rosidl_generate_interfaces(${PROJECT_NAME}
+#  "srv/MapPath.srv"
+#)
 
 ###########
 ## Build ##
