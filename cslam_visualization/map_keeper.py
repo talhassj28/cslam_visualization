@@ -1,6 +1,6 @@
 import os
 import json
-from cslam_visualization.srv import MapPath
+from cslam_common_interfaces.srv import MapPath # Transferred service to cslam_common_interfaces
 from rclpy.node import Node
 
 import open3d
